@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "deno.window"
+        ]
+    },
+    "imports": {
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+        "@google/genai": "npm:@google/genai@^1"
+    }
+}
