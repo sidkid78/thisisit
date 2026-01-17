@@ -95,10 +95,10 @@ This stage is designed to be non-blocking, providing a responsive user experienc
 
 1. **Capture (Frontend):** The homeowner uses a WebXR-based component (built with `@react-three/xr`) in the Next.js app to capture images of their home. These images are uploaded directly and securely to a private bucket in **Supabase Storage**.
 2. **Initiate (Edge Function):** The app invokes a Supabase Edge Function (`process-ar-assessment`), passing the storage paths of the uploaded images. This function immediately creates a placeholder record in the `ar_assessments` table with a `processing` status and returns a `202 Accepted` response to the user.
-3. **Orchestrate (Background Function):** The initiator function then triggers a second, long-running Edge Function (`generate-ai-analysis`) without awaiting its completion. This worker function:
+3. **Orchestrate (Background Function):** The worker function:
     * Generates secure, signed URLs for the stored images.
-    * Calls the **Google Gemini API** with the images and a specialized prompt to perform hazard analysis.
-    * Calls the **Fal.ai API** with the results to generate "after" visualizations.
+    * Calls the Google Gemini API with the images and a specialized prompt to perform hazard analysis.
+    * Calls the Gemini 2.5 Flash Image API with the original images and analysis results to generate "after" visualizations showing the recommended modifications.
 4. **Persist & Notify:** The worker function updates the `ar_assessments` record with the AI results and changes its status to `completed`. The homeowner's app, subscribed to database changes via **Supabase Realtime**, is instantly notified and displays the full report.
 
 #### **Stage 2: Lead Submission and Contractor Matching**
@@ -1390,9 +1390,9 @@ The process is designed to be asynchronous to provide a responsive user interfac
 2. **Trigger Function (Frontend -> Edge Function):** Upon successful upload, the frontend invokes a Supabase Edge Function (`process-ar-assessment`), passing the storage paths of the new images and the associated `project_id`.
 3. **Acknowledge & Delegate (Edge Function):** The `process-ar-assessment` function validates the request, creates an initial `ar_assessments` record with a `processing` status, and immediately returns a `202 Accepted` response. It then invokes a second, long-running Edge Function (`generate-ai-analysis`) without waiting for its completion.
 4. **Orchestrate AI (Background Function):** The `generate-ai-analysis` function:
-    a.  Generates secure, time-limited signed URLs for the uploaded images.
-    b.  Calls the **Google Gemini API** with the image URLs and a specialized prompt to perform hazard analysis.
-    c.  Calls the **Fal.ai API** with the original image URLs and Gemini's recommendations to generate "after" visualizations.
+    * Generates secure, time-limited signed URLs for the uploaded images.
+    * Calls the Google Gemini API with the image URLs and a specialized prompt to perform hazard analysis.
+    * Calls the Gemini 2.5 Flash Image API with the original image and Gemini's recommendations to generate "after" visualizations.
 5. **Persist Results (Background Function -> Database):** The function gathers the results from both AI services and updates the corresponding `ar_assessments` record in the PostgreSQL database, changing its status to `completed`.
 6. **Real-time Notification (Database -> Frontend):** The Next.js app, subscribed to changes on the `ar_assessments` table via Supabase Realtime, receives the updated record automatically and displays the full report to the homeowner.
 
@@ -1461,7 +1461,6 @@ We use two Edge Functions to manage the asynchronous workflow effectively.
 * **Location:** `supabase/functions/`
 * **Environment Variables (Secrets):**
   * `GEMINI_API_KEY`: Your Google AI Studio API key.
-  * `FAL_API_SECRET`: Your Fal.ai API key/secret.
   * `SUPABASE_SERVICE_ROLE_KEY`: Required for the background function to bypass RLS when updating the database.
 
 ##### **3.1. `process-ar-assessment` (The Initiator)**
@@ -1532,8 +1531,8 @@ This function performs the long-running AI tasks. It uses the `SERVICE_ROLE_KEY`
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// Prompt Engineering for Gemini
-const GEMINI_PROMPT = `
+// Prompt Engineering for Gemini Analysis
+const GEMINI_ANALYSIS_PROMPT = `
   You are an expert Certified Aging-in-Place Specialist (CAPS). Analyze the following home images for accessibility hazards for seniors.
   Based ONLY on the visual information, identify specific issues and provide actionable recommendations.
   Your response MUST be in a valid JSON format with the following structure:
@@ -1562,40 +1561,111 @@ serve(async (req) => {
 
     const imageUrls = signedUrlData.map(item => item.signedUrl);
 
-    // 3. Call Google Gemini API
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: GEMINI_PROMPT },
-            ...imageUrls.map(url => ({ inline_data: { mime_type: "image/jpeg", data: btoa(await (await fetch(url)).arrayBuffer()) } }))
-          ]
-        }]
-      })
-    });
-    const geminiJson = await geminiRes.json();
-    const geminiAnalysis = JSON.parse(geminiJson.candidates[0].content.parts[0].text);
-
-    // 4. Call Fal.ai API for visualization (example for one recommendation)
-    let visualizationUrls = [];
-    if (geminiAnalysis.recommendations && geminiAnalysis.recommendations.length > 0) {
-      const firstRecommendation = geminiAnalysis.recommendations[0].details;
-      const falRes = await fetch('https://fal.run/fal-ai/fast-sdxl', {
+    // 3. Call Google Gemini API for hazard analysis
+    const geminiAnalysisRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
+      {
         method: 'POST',
-        headers: { 
-          'Authorization': `Key ${Deno.env.get('FAL_API_SECRET')}`,
-          'Content-Type': 'application/json' 
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image_url: imageUrls[0], // Use the first image as base
-          prompt: `A photo of a bathroom with this modification: "${firstRecommendation}"`,
+          contents: [{
+            parts: [
+              { text: GEMINI_ANALYSIS_PROMPT },
+              ...await Promise.all(imageUrls.map(async url => {
+                const imageResponse = await fetch(url);
+                const imageBuffer = await imageResponse.arrayBuffer();
+                return {
+                  inline_data: {
+                    mime_type: "image/jpeg",
+                    data: btoa(String.fromCharCode(...new Uint8Array(imageBuffer)))
+                  }
+                };
+              }))
+            ]
+          }],
+          generationConfig: {
+            response_mime_type: "application/json"
+          }
         })
-      });
-      const falJson = await falRes.json();
-      if (falJson.images && falJson.images[0]) {
-        visualizationUrls.push(falJson.images[0].url);
+      }
+    );
+    
+    const geminiAnalysisJson = await geminiAnalysisRes.json();
+    const geminiAnalysis = JSON.parse(
+      geminiAnalysisJson.candidates[0].content.parts[0].text
+    );
+
+    // 4. Generate "after" visualizations using Gemini 2.5 Flash Image
+    let visualizationUrls = [];
+    
+    if (geminiAnalysis.recommendations && geminiAnalysis.recommendations.length > 0) {
+      // Generate visualization for the first recommendation
+      const firstRecommendation = geminiAnalysis.recommendations[0];
+      
+      // Fetch the original image to pass to the image generation API
+      const originalImageResponse = await fetch(imageUrls[0]);
+      const originalImageBuffer = await originalImageResponse.arrayBuffer();
+      const base64Image = btoa(String.fromCharCode(...new Uint8Array(originalImageBuffer)));
+      
+      const visualizationPrompt = `
+        Transform this home interior image to show the following accessibility modification:
+        ${firstRecommendation.recommendation}: ${firstRecommendation.details}
+        
+        Keep the same room layout and style, but clearly show the recommended modification in place.
+        The result should look realistic and professionally edited.
+      `;
+
+      const geminiImageRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${Deno.env.get('GEMINI_API_KEY')}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: "image/jpeg",
+                    data: base64Image
+                  }
+                },
+                { text: visualizationPrompt }
+              ]
+            }]
+          })
+        }
+      );
+
+      const geminiImageJson = await geminiImageRes.json();
+      
+      // Extract the generated image from the response
+      if (geminiImageJson.candidates?.[0]?.content?.parts) {
+        for (const part of geminiImageJson.candidates[0].content.parts) {
+          if (part.inline_data) {
+            // Upload the generated visualization to Supabase Storage
+            const visualizationBuffer = Uint8Array.from(
+              atob(part.inline_data.data), 
+              c => c.charCodeAt(0)
+            );
+            
+            const visualizationPath = `private/${assessmentId}/visualization_${Date.now()}.png`;
+            const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+              .from('assessment-media')
+              .upload(visualizationPath, visualizationBuffer, {
+                contentType: 'image/png',
+                upsert: false
+              });
+            
+            if (!uploadError && uploadData) {
+              // Get the public URL for the uploaded visualization
+              const { data: urlData } = await supabaseAdmin.storage
+                .from('assessment-media')
+                .getPublicUrl(visualizationPath);
+              
+              visualizationUrls.push(urlData.publicUrl);
+            }
+          }
+        }
       }
     }
 
@@ -1607,8 +1677,8 @@ serve(async (req) => {
         accessibility_score: geminiAnalysis.accessibility_score,
         identified_hazards: geminiAnalysis.identified_hazards,
         recommendations: geminiAnalysis.recommendations,
-        gemini_analysis_raw: geminiJson, // Store the full raw response
-        fal_ai_visualization_urls: visualizationUrls,
+        gemini_analysis_raw: geminiAnalysisJson, // Store the full raw response
+        gemini_visualization_urls: visualizationUrls,
       })
       .eq('id', assessmentId);
 
@@ -1618,7 +1688,14 @@ serve(async (req) => {
 
   } catch (error) {
     // Error handling: Update the record to a 'failed' state
-    await supabaseAdmin.from('ar_assessments').update({ status: 'failed', error_message: error.message }).eq('id', assessmentId);
+    await supabaseAdmin
+      .from('ar_assessments')
+      .update({ 
+        status: 'failed', 
+        error_message: error.message 
+      })
+      .eq('id', assessmentId);
+    
     console.error('AI Analysis Failed:', error);
     return new Response(error.message, { status: 500 });
   }

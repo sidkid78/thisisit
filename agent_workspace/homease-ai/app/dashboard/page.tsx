@@ -298,7 +298,26 @@ async function ContractorDashboard({ user, profile }: any) {
                         Create Proposal
                       </Link>
                     )}
+                    {match.status === 'proposal_sent' && (
+                      <span className="px-4 py-2 bg-amber-500/20 text-amber-300 rounded-lg text-sm font-medium">
+                        ⏳ Awaiting Response
+                      </span>
+                    )}
+                    {match.status === 'proposal_accepted' && (
+                      <Link
+                        href={`/dashboard/project/${match.projects?.id}`}
+                        className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        ✓ Start Project
+                      </Link>
+                    )}
+                    {match.status === 'proposal_rejected' && (
+                      <span className="px-4 py-2 bg-red-500/20 text-red-300 rounded-lg text-sm font-medium">
+                        ✗ Declined
+                      </span>
+                    )}
                   </div>
+
                 </div>
               ))}
             </div>
