@@ -137,19 +137,19 @@ export default function ProposalReviewPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-white flex items-center justify-center transition-colors">
+                <div className="w-8 h-8 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
             </div>
         )
     }
 
     if (error || !proposal) {
         return (
-            <div className="min-h-screen bg-slate-950 text-white p-8">
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-white p-8 transition-colors">
                 <div className="max-w-2xl mx-auto text-center">
                     <h1 className="text-2xl font-bold mb-4">Error</h1>
-                    <p className="text-slate-400 mb-6">{error || 'Proposal not found'}</p>
-                    <Link href="/dashboard" className="text-blue-400 hover:underline">
+                    <p className="text-gray-600 dark:text-slate-400 mb-6">{error || 'Proposal not found'}</p>
+                    <Link href="/dashboard" className="text-blue-600 dark:text-blue-400 hover:underline">
                         Back to Dashboard
                     </Link>
                 </div>
@@ -160,18 +160,18 @@ export default function ProposalReviewPage() {
     const totalDollars = proposal.total_amount_cents / 100
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-8">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-white p-8 transition-colors">
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <Link href="/dashboard" className="text-slate-400 hover:text-white mb-4 flex items-center gap-2">
+                    <Link href="/dashboard" className="text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white mb-4 flex items-center gap-2 transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                         Back to Dashboard
                     </Link>
-                    <h1 className="text-3xl font-bold">{proposal.title}</h1>
-                    <p className="text-slate-400 mt-1">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{proposal.title}</h1>
+                    <p className="text-gray-600 dark:text-slate-400 mt-1">
                         Submitted by {contractor?.full_name || 'Contractor'} • {contractor?.contractor_details?.company_name}
                     </p>
                 </div>
@@ -180,40 +180,40 @@ export default function ProposalReviewPage() {
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Summary */}
-                        <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
-                            <h2 className="text-lg font-semibold mb-3">Summary</h2>
-                            <p className="text-slate-300">{proposal.summary}</p>
+                        <div className="p-6 rounded-2xl bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700">
+                            <h2 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">Summary</h2>
+                            <p className="text-gray-600 dark:text-slate-300">{proposal.summary}</p>
                             <div className="mt-4 flex gap-4 text-sm">
-                                <div className="px-3 py-1 bg-slate-700 rounded-full">
+                                <div className="px-3 py-1 bg-gray-100 dark:bg-slate-700 rounded-full text-gray-700 dark:text-slate-300">
                                     ⏱️ {proposal.estimated_duration}
                                 </div>
-                                <div className="px-3 py-1 bg-slate-700 rounded-full">
+                                <div className="px-3 py-1 bg-gray-100 dark:bg-slate-700 rounded-full text-gray-700 dark:text-slate-300">
                                     📅 Valid until {new Date(proposal.valid_until).toLocaleDateString()}
                                 </div>
                             </div>
                         </div>
 
                         {/* Line Items */}
-                        <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
-                            <h2 className="text-lg font-semibold mb-4">Scope of Work</h2>
+                        <div className="p-6 rounded-2xl bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700">
+                            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Scope of Work</h2>
                             <div className="space-y-3">
                                 {proposal.line_items.map((item, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-xl">
+                                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
                                         <div className="flex-1">
-                                            <div className="font-medium">{item.description}</div>
+                                            <div className="font-medium text-gray-900 dark:text-white">{item.description}</div>
                                             {item.from_recommendation && (
-                                                <div className="text-xs text-blue-400 mt-1">From AI Assessment</div>
+                                                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">From AI Assessment</div>
                                             )}
                                         </div>
-                                        <div className="text-right font-semibold">
+                                        <div className="text-right font-semibold text-gray-900 dark:text-white">
                                             ${(item.total / 100).toLocaleString()}
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="mt-4 pt-4 border-t border-slate-600 flex justify-between items-center">
-                                <span className="text-lg font-semibold">Total</span>
-                                <span className="text-2xl font-bold text-blue-400">
+                            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-600 flex justify-between items-center">
+                                <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
+                                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                                     ${totalDollars.toLocaleString()}
                                 </span>
                             </div>
@@ -222,7 +222,7 @@ export default function ProposalReviewPage() {
                         {/* Chat */}
                         {proposal.status !== 'draft' && project && contractor && (
                             <div>
-                                <h2 className="text-lg font-semibold mb-4">Chat with Contractor</h2>
+                                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Chat with Contractor</h2>
                                 <ChatComponent
                                     projectId={proposal.project_id}
                                     currentUserId={userId}
@@ -235,19 +235,19 @@ export default function ProposalReviewPage() {
                     {/* Sidebar */}
                     <div className="space-y-6">
                         {/* Contractor Card */}
-                        <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
-                            <h3 className="font-semibold mb-4">Contractor</h3>
+                        <div className="p-6 rounded-2xl bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700">
+                            <h3 className="font-semibold mb-4 text-gray-900 dark:text-white">Contractor</h3>
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-lg">
                                     {contractor?.full_name?.charAt(0) || '?'}
                                 </div>
                                 <div>
-                                    <div className="font-medium">{contractor?.full_name}</div>
-                                    <div className="text-sm text-slate-400">{contractor?.contractor_details?.company_name}</div>
+                                    <div className="font-medium text-gray-900 dark:text-white">{contractor?.full_name}</div>
+                                    <div className="text-sm text-gray-500 dark:text-slate-400">{contractor?.contractor_details?.company_name}</div>
                                 </div>
                             </div>
                             {contractor?.contractor_details?.is_caps_certified && (
-                                <div className="px-3 py-2 bg-green-500/20 text-green-300 rounded-lg text-sm font-medium mb-2">
+                                <div className="px-3 py-2 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium mb-2">
                                     ✓ CAPS Certified
                                 </div>
                             )}
@@ -255,10 +255,10 @@ export default function ProposalReviewPage() {
 
                         {/* Action Buttons */}
                         {proposal.status !== 'accepted' && proposal.status !== 'rejected' && (
-                            <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30">
-                                <h3 className="font-semibold mb-4">Your Response</h3>
+                            <div className="p-6 rounded-2xl bg-gradient-to-br from-blue-50 dark:from-blue-500/10 to-cyan-50 dark:to-cyan-500/10 border border-blue-200 dark:border-blue-500/30">
+                                <h3 className="font-semibold mb-4 text-gray-900 dark:text-white">Your Response</h3>
                                 {error && (
-                                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">
+                                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg text-red-700 dark:text-red-300 text-sm">
                                         {error}
                                     </div>
                                 )}
@@ -266,14 +266,14 @@ export default function ProposalReviewPage() {
                                     <button
                                         onClick={() => handleResponse(true)}
                                         disabled={isResponding}
-                                        className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:opacity-50 rounded-xl font-semibold transition-colors"
+                                        className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:opacity-50 rounded-xl font-semibold transition-colors text-white"
                                     >
                                         {isResponding ? 'Processing...' : '✓ Accept Proposal'}
                                     </button>
                                     <button
                                         onClick={() => handleResponse(false)}
                                         disabled={isResponding}
-                                        className="w-full py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-xl font-medium transition-colors"
+                                        className="w-full py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 disabled:opacity-50 rounded-xl font-medium transition-colors text-gray-900 dark:text-white"
                                     >
                                         Decline
                                     </button>
@@ -282,9 +282,9 @@ export default function ProposalReviewPage() {
                         )}
 
                         {proposal.status === 'accepted' && (
-                            <div className="p-6 rounded-2xl bg-green-500/20 border border-green-500/30">
-                                <div className="text-green-300 font-semibold text-lg mb-2">✓ Proposal Accepted</div>
-                                <p className="text-sm text-slate-300">
+                            <div className="p-6 rounded-2xl bg-green-100 dark:bg-green-500/20 border border-green-200 dark:border-green-500/30">
+                                <div className="text-green-700 dark:text-green-300 font-semibold text-lg mb-2">✓ Proposal Accepted</div>
+                                <p className="text-sm text-gray-600 dark:text-slate-300">
                                     You can now coordinate directly with the contractor.
                                 </p>
                             </div>

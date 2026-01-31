@@ -5,10 +5,12 @@ import { createClient } from '@/utils/supabase/client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function LoginPage() {
   const supabase = createClient()
   const router = useRouter()
+  const { isDark } = useTheme()
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -20,13 +22,60 @@ export default function LoginPage() {
     return () => subscription.unsubscribe()
   }, [supabase, router])
 
+  // Theme-aware colors for Supabase Auth UI
+  const authColors = isDark ? {
+    brand: '#3b82f6',
+    brandAccent: '#2563eb',
+    brandButtonText: 'white',
+    defaultButtonBackground: '#1e293b',
+    defaultButtonBackgroundHover: '#334155',
+    defaultButtonBorder: '#475569',
+    defaultButtonText: 'white',
+    inputBackground: '#0f172a',
+    inputBorder: '#334155',
+    inputBorderHover: '#3b82f6',
+    inputBorderFocus: '#3b82f6',
+    inputText: 'white',
+    inputPlaceholder: '#64748b',
+    inputLabelText: '#e2e8f0',
+    anchorTextColor: '#60a5fa',
+    anchorTextHoverColor: '#93c5fd',
+  } : {
+    brand: '#3b82f6',
+    brandAccent: '#2563eb',
+    brandButtonText: 'white',
+    defaultButtonBackground: '#f1f5f9',
+    defaultButtonBackgroundHover: '#e2e8f0',
+    defaultButtonBorder: '#cbd5e1',
+    defaultButtonText: '#1e293b',
+    inputBackground: '#ffffff',
+    inputBorder: '#cbd5e1',
+    inputBorderHover: '#3b82f6',
+    inputBorderFocus: '#3b82f6',
+    inputText: '#1e293b',
+    inputPlaceholder: '#94a3b8',
+    inputLabelText: '#334155',
+    anchorTextColor: '#3b82f6',
+    anchorTextHoverColor: '#2563eb',
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center p-6 relative overflow-hidden">
+    <div className={`min-h-screen flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300 ${
+      isDark 
+        ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white' 
+        : 'bg-gradient-to-b from-slate-100 via-white to-slate-100 text-gray-900'
+    }`}>
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute -bottom-40 right-1/3 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse ${
+          isDark ? 'bg-blue-500/20' : 'bg-blue-500/10'
+        }`} />
+        <div className={`absolute top-1/2 -left-40 w-96 h-96 rounded-full blur-3xl animate-pulse ${
+          isDark ? 'bg-cyan-500/10' : 'bg-cyan-500/5'
+        }`} style={{ animationDelay: '1s' }} />
+        <div className={`absolute -bottom-40 right-1/3 w-80 h-80 rounded-full blur-3xl animate-pulse ${
+          isDark ? 'bg-blue-600/15' : 'bg-blue-600/10'
+        }`} style={{ animationDelay: '2s' }} />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
@@ -43,10 +92,18 @@ export default function LoginPage() {
         </Link>
 
         {/* Auth Card */}
-        <div className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-sm">
+        <div className={`p-8 rounded-2xl backdrop-blur-sm transition-colors duration-300 ${
+          isDark 
+            ? 'bg-slate-800/50 border border-slate-700' 
+            : 'bg-white/80 border border-gray-200 shadow-xl'
+        }`}>
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold mb-2">Welcome to HOMEase</h1>
-            <p className="text-slate-400">Sign in or create an account to get started</p>
+            <h1 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Welcome to HOMEase
+            </h1>
+            <p className={isDark ? 'text-slate-400' : 'text-gray-500'}>
+              Sign in or create an account to get started
+            </p>
           </div>
 
           <Auth
@@ -57,24 +114,7 @@ export default function LoginPage() {
               theme: ThemeSupa,
               variables: {
                 default: {
-                  colors: {
-                    brand: '#3b82f6',
-                    brandAccent: '#2563eb',
-                    brandButtonText: 'white',
-                    defaultButtonBackground: '#1e293b',
-                    defaultButtonBackgroundHover: '#334155',
-                    defaultButtonBorder: '#475569',
-                    defaultButtonText: 'white',
-                    inputBackground: '#0f172a',
-                    inputBorder: '#334155',
-                    inputBorderHover: '#3b82f6',
-                    inputBorderFocus: '#3b82f6',
-                    inputText: 'white',
-                    inputPlaceholder: '#64748b',
-                    inputLabelText: '#e2e8f0',
-                    anchorTextColor: '#60a5fa',
-                    anchorTextHoverColor: '#93c5fd',
-                  },
+                  colors: authColors,
                   borderWidths: {
                     buttonBorderWidth: '1px',
                     inputBorderWidth: '1px',
@@ -128,7 +168,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-slate-500 text-sm mt-8">
+        <p className={`text-center text-sm mt-8 ${isDark ? 'text-slate-500' : 'text-gray-500'}`}>
           By continuing, you agree to our{' '}
           <a href="#" className="text-blue-400 hover:text-blue-300">Terms of Service</a>
           {' '}and{' '}

@@ -4,18 +4,51 @@ import { GoogleGenAI } from "@google/genai"
 
 const GEMINI_PROMPT = `You are an expert Certified Aging-in-Place Specialist (CAPS). Analyze the following home images for accessibility hazards for seniors.
 
-Based ONLY on the visual information, identify specific issues and provide actionable recommendations.
+Based ONLY on the visual information, identify specific issues and provide actionable recommendations with cost estimates.
 
 Your response MUST be in valid JSON format with the following structure:
 {
   "accessibility_score": <An integer between 0 and 100, where 100 is perfectly accessible>,
   "identified_hazards": [
-    { "hazard": "Brief name of hazard", "details": "Description of the issue and why it's a risk", "area": "e.g., Doorway, Floor, Shower" }
+    { 
+      "hazard": "Brief name of hazard", 
+      "details": "Description of the issue and why it's a risk", 
+      "area": "e.g., Doorway, Floor, Shower",
+      "severity": "High" | "Medium" | "Low",
+      "position": { "x": <percentage 0-100 from left>, "y": <percentage 0-100 from top> }
+    }
   ],
   "recommendations": [
-    { "recommendation": "Brief name of solution", "details": "Description of the modification to fix a hazard" }
-  ]
+    { 
+      "recommendation": "Brief name of solution", 
+      "details": "Description of the modification to fix a hazard",
+      "priority": "High" | "Medium" | "Low"
+    }
+  ],
+  "estimated_measurements": {
+    "Door Clearance": "e.g., 30 inches",
+    "Aisle Width": "e.g., 32 inches"
+  },
+  "materials_needed": ["Material 1", "Material 2"],
+  "cost_estimate_min": <integer in USD>,
+  "cost_estimate_max": <integer in USD>
 }
+
+Guidelines for severity/priority:
+- High: Immediate safety risk, could cause falls or serious injury
+- Medium: Significant accessibility barrier, should be addressed soon
+- Low: Minor inconvenience or future consideration
+
+Guidelines for position:
+- x: horizontal position as percentage (0 = left edge, 100 = right edge)
+- y: vertical position as percentage (0 = top edge, 100 = bottom edge)
+- Estimate where in the image the hazard is located
+
+Guidelines for cost estimates:
+- Consider labor and materials for all recommendations combined
+- Provide realistic ranges for the US market
+- cost_estimate_min: lowest reasonable cost if DIY or basic solutions
+- cost_estimate_max: highest cost if using premium materials and professional installation
 
 Be thorough but realistic. Common hazards include:
 - Trip hazards (rugs, uneven flooring, high thresholds)
@@ -25,6 +58,9 @@ Be thorough but realistic. Common hazards include:
 - Slippery surfaces
 - Inaccessible storage
 - Step-in tubs/showers
+- Missing handrails
+- Sharp corners at wheelchair height
+- High shelving or controls
 
 Respond ONLY with valid JSON, no additional text.`;
 
@@ -93,7 +129,7 @@ Deno.serve(async (req: Request) => {
     console.log('Calling Gemini API with', imageContents.length, 'images...');
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash-preview-05-20',
       contents: contents,
       config: {
         responseMimeType: 'application/json',
@@ -124,7 +160,7 @@ Deno.serve(async (req: Request) => {
         show this room with these modifications applied. Make the improvements subtle and realistic.`;
 
         const vizResponse = await vizAi.models.generateContent({
-          model: 'gemini-2.5-flash-image',
+          model: 'gemini-2.0-flash-exp-image-generation',
           contents: [
             {
               inlineData: {
@@ -167,7 +203,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 5. Update the database with results
+    // 5. Update the database with results including new fields
     const { error: updateError } = await supabaseAdmin
       .from('ar_assessments')
       .update({
@@ -177,6 +213,10 @@ Deno.serve(async (req: Request) => {
         recommendations: geminiAnalysis.recommendations,
         gemini_analysis_raw: geminiAnalysis,
         fal_ai_visualization_urls: visualizationUrls.length > 0 ? visualizationUrls : null,
+        cost_estimate_min: geminiAnalysis.cost_estimate_min || null,
+        cost_estimate_max: geminiAnalysis.cost_estimate_max || null,
+        materials_needed: geminiAnalysis.materials_needed || null,
+        estimated_measurements: geminiAnalysis.estimated_measurements || null,
       })
       .eq('id', assessmentId);
 

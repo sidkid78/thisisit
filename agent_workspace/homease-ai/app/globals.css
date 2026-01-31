@@ -1,26 +1,444 @@
 @import "tailwindcss";
 
+/* ========================================
+   SEMANTIC COLOR TOKENS (Light Theme)
+   ======================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core backgrounds */
+  --color-skin-base: #f8fafc;
+  --color-skin-card: #ffffff;
+  --color-skin-subtle: #f1f5f9;
+  
+  /* Text colors */
+  --color-skin-text: #0f172a;
+  --color-skin-muted: #64748b;
+  
+  /* Borders */
+  --color-skin-border: #e2e8f0;
+  
+  /* Safety score colors */
+  --color-score-low: #ef4444;
+  --color-score-medium: #f59e0b;
+  --color-score-high: #22c55e;
+  
+  /* Legacy variables for compatibility */
+  --background: var(--color-skin-base);
+  --foreground: var(--color-skin-text);
 }
 
+/* ========================================
+   DARK THEME
+   ======================================== */
+.dark {
+  /* Core backgrounds */
+  --color-skin-base: #0f172a;
+  --color-skin-card: #1e293b;
+  --color-skin-subtle: #334155;
+  
+  /* Text colors */
+  --color-skin-text: #f1f5f9;
+  --color-skin-muted: #94a3b8;
+  
+  /* Borders */
+  --color-skin-border: #334155;
+  
+  /* Safety score colors (slightly adjusted for dark) */
+  --color-score-low: #f87171;
+  --color-score-medium: #fbbf24;
+  --color-score-high: #4ade80;
+  
+  /* Legacy variables */
+  --background: var(--color-skin-base);
+  --foreground: var(--color-skin-text);
+}
+
+/* ========================================
+   TAILWIND THEME INTEGRATION
+   ======================================== */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-skin-base: var(--color-skin-base);
+  --color-skin-card: var(--color-skin-card);
+  --color-skin-subtle: var(--color-skin-subtle);
+  --color-skin-text: var(--color-skin-text);
+  --color-skin-muted: var(--color-skin-muted);
+  --color-skin-border: var(--color-skin-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ========================================
+   BASE STYLES
+   ======================================== */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-skin-base);
+  color: var(--color-skin-text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-up {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce-small {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.7), 0 0 60px rgba(34, 197, 94, 0.4);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes float-medium {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes float-fast {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scan {
+  0%, 100% { transform: translateY(-100%); opacity: 0; }
+  50% { transform: translateY(5000%); opacity: 1; }
+}
+
+@keyframes float-particle {
+  0%, 100% { transform: translateY(100%) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(-50vh) scale(1); opacity: 0.5; }
+  90% { opacity: 0; }
+}
+
+@keyframes scale-in {
+  0% { transform: scale(0); }
+  80% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes flash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes countdown {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 283; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-scale-up {
+  animation: scale-up 0.2s ease-out;
+}
+
+.animate-bounce-small {
+  animation: bounce-small 0.4s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 4s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-fast 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.animate-scan {
+  animation: scan 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float-particle 4s ease-in-out infinite;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out forwards;
+}
+
+.animate-flash {
+  animation: flash 0.15s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out;
+}
+
+.animate-countdown {
+  animation: countdown linear forwards;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Semantic background utilities */
+.bg-skin-base {
+  background-color: var(--color-skin-base);
+}
+
+.bg-skin-card {
+  background-color: var(--color-skin-card);
+}
+
+.bg-skin-subtle {
+  background-color: var(--color-skin-subtle);
+}
+
+/* Semantic text utilities */
+.text-skin-text {
+  color: var(--color-skin-text);
+}
+
+.text-skin-muted {
+  color: var(--color-skin-muted);
+}
+
+/* Semantic border utilities */
+.border-skin-border {
+  border-color: var(--color-skin-border);
+}
+
+/* ========================================
+   FOCUS & ACCESSIBILITY
+   ======================================== */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* ========================================
+   CUSTOM SCROLLBAR
+   ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-skin-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-skin-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-skin-muted);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Hide scrollbar utility */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-skin-border);
+  border-radius: 3px;
+}
+
+/* ========================================
+   LANDING PAGE SPECIFIC (Forces Light Theme)
+   ======================================== */
+.landing-page {
+  --color-skin-base: #f8fafc;
+  --color-skin-card: #ffffff;
+  --color-skin-subtle: #f1f5f9;
+  --color-skin-text: #0f172a;
+  --color-skin-muted: #64748b;
+  --color-skin-border: #e2e8f0;
+}
+
+/* ========================================
+   AR CAMERA & MOBILE UTILITIES
+   ======================================== */
+@keyframes flash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.animate-flash {
+  animation: flash 0.15s ease-out;
+}
+
+/* Safe area padding for notched devices */
+.pb-safe {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+/* Touch action utilities for swipeable components */
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+/* Prevent text selection during swipe */
+.select-none {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Hardware acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
 }

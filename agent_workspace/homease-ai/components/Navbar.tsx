@@ -1,127 +1,264 @@
+'use client'
+
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/server'
+import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { LogOut, User as UserIcon, Menu, X, Home, Sun, Moon } from 'lucide-react'
+import type { User } from '@supabase/supabase-js'
+import { useTheme } from '@/contexts/ThemeContext'
 
-export default async function Navbar() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+interface Profile {
+  id: string
+  full_name: string | null
+  role: 'homeowner' | 'contractor' | 'admin'
+}
 
-  let profile = null
-  if (user) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('full_name, role')
-      .eq('id', user.id)
-      .single()
-    profile = data
+export default function Navbar() {
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const pathname = usePathname()
+  const { theme, toggleTheme, isDark } = useTheme()
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .eq('id', user.id)
+          .single()
+        
+        setProfile(profileData)
+      }
+      setLoading(false)
+    }
+
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (!session?.user) {
+        setProfile(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    setIsOpen(false)
+    window.location.href = '/'
   }
 
-  // If user is logged in and on dashboard, show dashboard header style
-  // Otherwise show the public header
+  // Dynamic links based on user role
+  const getLinks = () => {
+    if (!user || !profile) return []
 
+    switch (profile.role) {
+      case 'homeowner':
+        return [
+          { label: 'Dashboard', path: '/dashboard' },
+          { label: 'New Assessment', path: '/dashboard/assessment' },
+        ]
+      case 'contractor':
+        return [
+          { label: 'Lead Market', path: '/dashboard/marketplace' },
+          { label: 'My Jobs', path: '/dashboard/jobs' },
+        ]
+      case 'admin':
+        return [
+          { label: 'Overview', path: '/admin' },
+          { label: 'Users', path: '/admin/users' },
+        ]
+      default:
+        return []
+    }
+  }
+
+  const links = getLinks()
+  const isActive = (path: string) => pathname === path
+
+  // Don't show navbar on landing page if not logged in
+  const isLandingPage = pathname === '/'
+  
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 group">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-cyan-400 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
-            <svg className="w-5 h-5 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
+    <nav className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50 transition-colors duration-300" aria-label="Main Navigation">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          {/* Logo and Desktop Nav */}
+          <div className="flex items-center">
+            <Link href="/" className="flex-shrink-0 flex items-center cursor-pointer gap-2" aria-label="HOMEase AI Home">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/20 dark:bg-blue-500/30 flex items-center justify-center">
+                <Home className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight whitespace-nowrap">HOMEase | AI</span>
+            </Link>
+
+            {user && links.length > 0 && (
+              <div className="hidden md:ml-8 md:flex md:space-x-4 lg:space-x-8">
+                {links.map((link) => (
+                  <Link
+                    key={link.path}
+                    href={link.path}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors whitespace-nowrap relative
+                      ${isActive(link.path)
+                        ? 'border-blue-500 text-gray-900 dark:text-white'
+                        : 'border-transparent text-gray-500 dark:text-slate-400 hover:border-blue-300 hover:text-gray-900 dark:hover:text-white'
+                      }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-            HOMEase AI
-          </span>
-        </Link>
 
-        {user ? (
-          /* Logged-in Navigation */
-          <>
-            <nav className="hidden md:flex items-center gap-1">
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
-              >
-                Dashboard
-              </Link>
-              {profile?.role === 'homeowner' && (
-                <Link
-                  href="/dashboard/assessment"
-                  className="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
-                >
-                  New Assessment
-                </Link>
+          {/* Right Side Actions */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-4">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-600 hover:text-gray-900 dark:hover:text-white transition-colors"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? (
+                <Sun className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Moon className="h-5 w-5" aria-hidden="true" />
               )}
-              {profile?.role === 'contractor' && (
-                <Link
-                  href="/dashboard"
-                  className="px-4 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
-                >
-                  My Leads
-                </Link>
-              )}
-              {profile?.role === 'admin' && (
-                <Link
-                  href="/admin"
-                  className="px-4 py-2 text-sm text-rose-400 hover:text-rose-300 hover:bg-slate-800/50 rounded-lg transition-colors"
-                >
-                  Admin Panel
-                </Link>
-              )}
-            </nav>
+            </button>
 
-            {/* User Menu */}
-            <div className="flex items-center gap-3">
-              {/* Notification Bell */}
-              <button className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </button>
-
-              {/* Profile Link */}
-              <Link
-                href="/dashboard/account"
-                className="flex items-center gap-3 px-3 py-1.5 hover:bg-slate-800/50 rounded-xl transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-sm font-bold text-slate-900">
-                  {profile?.full_name?.charAt(0) || user.email?.charAt(0).toUpperCase() || 'U'}
+            {loading ? (
+              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-700 animate-pulse" />
+            ) : user && profile ? (
+              <div className="flex items-center space-x-2 lg:space-x-4">
+                <div className="flex flex-col text-right mr-2">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                    {profile.full_name || user.email?.split('@')[0]}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-slate-400 uppercase tracking-wider">{profile.role}</span>
                 </div>
-                <div className="hidden sm:block text-left">
-                  <div className="text-sm font-medium text-white">
-                    {profile?.full_name || 'Account'}
-                  </div>
-                  <div className="text-xs text-slate-400 capitalize">
-                    {profile?.role || 'User'}
-                  </div>
-                </div>
-              </Link>
-            </div>
-          </>
-        ) : (
-          /* Logged-out Navigation */
-          <>
-            <nav className="hidden md:flex items-center gap-6">
-              <a href="/#features" className="text-sm text-slate-300 hover:text-white transition-colors">Features</a>
-              <a href="/#how-it-works" className="text-sm text-slate-300 hover:text-white transition-colors">How It Works</a>
-              <a href="/#testimonials" className="text-sm text-slate-300 hover:text-white transition-colors">Testimonials</a>
-            </nav>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="text-sm text-slate-300 hover:text-white transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/signup"
-                className="px-5 py-2 text-sm bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full font-medium transition-all hover:shadow-lg hover:shadow-blue-500/25"
-              >
-                Get Started
-              </Link>
-            </div>
-          </>
-        )}
+                <button
+                  onClick={handleLogout}
+                  className="bg-gray-100 dark:bg-slate-700 p-2 rounded-full text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-600 hover:text-red-500 focus:outline-none transition-colors"
+                  aria-label="Log out"
+                  title="Log out"
+                >
+                  <LogOut className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-x-2 lg:space-x-4 flex items-center">
+                <Link href="/login" className="text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors text-sm lg:text-base">
+                  Login
+                </Link>
+                <Link href="/login" className="bg-blue-600 text-white px-3 py-1.5 lg:px-4 lg:py-2 rounded-md font-medium hover:bg-blue-700 transition-colors text-sm lg:text-base whitespace-nowrap">
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="flex items-center md:hidden gap-2">
+            {/* Mobile Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-md text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? (
+                <Sun className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Moon className="h-5 w-5" aria-hidden="true" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none"
+              aria-expanded={isOpen}
+              aria-controls="mobile-menu"
+              aria-label="Open main menu"
+            >
+              {isOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
+            </button>
+          </div>
+        </div>
       </div>
-    </header>
+
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 animate-fade-in" id="mobile-menu">
+          <div className="pt-2 pb-3 space-y-1 px-2">
+            {user && links.map((link) => (
+              <Link
+                key={link.path}
+                href={link.path}
+                onClick={() => setIsOpen(false)}
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors flex items-center justify-between
+                  ${isActive(link.path)
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 text-blue-700 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:border-blue-300 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+              >
+                <span>{link.label}</span>
+              </Link>
+            ))}
+            {!user && (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="block pl-3 pr-4 py-2 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-base font-medium text-blue-700 dark:text-blue-400"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+          {user && profile && (
+            <div className="pt-4 pb-4 border-t border-gray-200 dark:border-slate-700">
+              <div className="flex items-center px-4">
+                <div className="flex-shrink-0">
+                  <UserIcon className="h-10 w-10 rounded-full bg-gray-100 dark:bg-slate-700 p-2 text-gray-500 dark:text-slate-400" />
+                </div>
+                <div className="ml-3">
+                  <div className="text-base font-medium text-gray-900 dark:text-white">
+                    {profile.full_name || user.email?.split('@')[0]}
+                  </div>
+                  <div className="text-sm font-medium text-gray-500 dark:text-slate-400">{user.email}</div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="ml-auto bg-transparent flex-shrink-0 p-1 rounded-full text-gray-500 dark:text-slate-400 hover:text-red-500 focus:outline-none"
+                  aria-label="Log out"
+                >
+                  <LogOut className="h-6 w-6" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </nav>
   )
 }
