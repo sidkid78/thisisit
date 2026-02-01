@@ -417,6 +417,7 @@ export function MeasurementsOverlay({
                         <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-slate-800 rounded-lg">
                             {COLORS.map(color => (
                                 <button
+                                    title="Select color"
                                     key={color}
                                     onClick={() => setCurrentColor(color)}
                                     className={`w-6 h-6 rounded-full transition-transform ${currentColor === color ? 'scale-110 ring-2 ring-offset-2 ring-gray-400' : ''
@@ -477,6 +478,7 @@ export function MeasurementsOverlay({
                         {/* Zoom controls */}
                         <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-slate-800 rounded-lg">
                             <button
+                                title="Zoom out"
                                 onClick={() => setZoom(prev => Math.max(0.5, prev - 0.25))}
                                 className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700"
                             >
@@ -484,12 +486,14 @@ export function MeasurementsOverlay({
                             </button>
                             <span className="text-xs font-medium px-2">{Math.round(zoom * 100)}%</span>
                             <button
+                                title="Zoom in"
                                 onClick={() => setZoom(prev => Math.min(3, prev + 0.25))}
                                 className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700"
                             >
                                 <ZoomIn className="w-4 h-4" />
                             </button>
                             <button
+                                title="Reset zoom"
                                 onClick={resetView}
                                 className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-slate-700"
                             >

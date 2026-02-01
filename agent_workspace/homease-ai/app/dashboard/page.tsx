@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import PurchaseLeadButton from '@/components/PurchaseLeadButton'
+import { HomeownerStatsWidget, ContractorStatsWidget, ProjectCardProgress } from '@/components/dashboard/DashboardWidgets'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -47,20 +48,26 @@ async function HomeownerDashboard({ user, profile }: { user: any; profile: any }
     .neq('status', 'draft')
     .order('created_at', { ascending: false })
 
+  // Calculate stats
+  const totalProjects = projects?.length || 0
+  const completed = projects?.filter((p: any) => p.status === 'completed').length || 0
+  const activeLeads = projects?.filter((p: any) => p.status === 'open_for_bids').length || 0
+  const assessmentsDone = projects?.filter((p: any) => p.ar_assessments?.status === 'completed').length || 0
+
   return (
-    <div className="min-h-screen bg-skin-base text-skin-text p-8 transition-colors">
+    <div className="min-h-screen bg-skin-base text-skin-text p-4 md:p-8 transition-colors">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-linear-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold bg-linear-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
               Homeowner Dashboard
             </h1>
             <p className="text-skin-muted mt-1">Welcome back, {profile?.full_name || user.email}</p>
           </div>
           <Link
             href="/dashboard/assessment"
-            className="px-6 py-3 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full font-medium text-white transition-all hover:shadow-lg hover:shadow-blue-500/25"
+            className="px-6 py-3 bg-linear-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 rounded-full font-medium text-white transition-all hover:shadow-lg hover:shadow-blue-500/25 text-center"
           >
             + New Assessment
           </Link>
@@ -104,30 +111,14 @@ async function HomeownerDashboard({ user, profile }: { user: any; profile: any }
           </div>
         )}
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">{projects?.length || 0}</div>
-            <div className="text-sm text-skin-muted">Total Projects</div>
-          </div>
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">
-              {projects?.filter((p: any) => p.status === 'completed').length || 0}
-            </div>
-            <div className="text-sm text-skin-muted">Completed</div>
-          </div>
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">
-              {projects?.filter((p: any) => p.status === 'open_for_bids').length || 0}
-            </div>
-            <div className="text-sm text-skin-muted">Active Leads</div>
-          </div>
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">
-              {projects?.filter((p: any) => p.ar_assessments?.status === 'completed').length || 0}
-            </div>
-            <div className="text-sm text-skin-muted">Assessments Done</div>
-          </div>
+        {/* Quick Stats - Now with swipeable cards on mobile */}
+        <div className="mb-8">
+          <HomeownerStatsWidget
+            totalProjects={totalProjects}
+            completed={completed}
+            activeLeads={activeLeads}
+            assessmentsDone={assessmentsDone}
+          />
         </div>
 
         {/* Projects List */}
@@ -136,17 +127,26 @@ async function HomeownerDashboard({ user, profile }: { user: any; profile: any }
           {projects && projects.length > 0 ? (
             <div className="space-y-4">
               {projects.map((project: any) => (
-                <div key={project.id} className="p-6 rounded-xl bg-skin-card border border-skin-border hover:border-skin-muted transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg text-skin-text">{project.title}</h3>
-                      <p className="text-skin-muted text-sm mt-1">{project.description}</p>
+                <div key={project.id} className="p-4 md:p-6 rounded-xl bg-skin-card border border-skin-border hover:border-skin-muted transition-colors">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg text-skin-text truncate">{project.title}</h3>
+                      <p className="text-skin-muted text-sm mt-1 line-clamp-2">{project.description}</p>
                     </div>
                     <StatusBadge status={project.status} />
                   </div>
 
+                  {/* Project Progress Indicator */}
+                  <div className="mb-4 p-3 rounded-lg bg-skin-subtle">
+                    <ProjectCardProgress
+                      status={project.status}
+                      assessmentStatus={project.ar_assessments?.status}
+                      compact={true}
+                    />
+                  </div>
+
                   {project.ar_assessments && project.ar_assessments.status === 'completed' && (
-                    <div className="mt-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30">
+                    <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="text-sm text-blue-700 dark:text-blue-300">Safety Score</div>
@@ -163,16 +163,27 @@ async function HomeownerDashboard({ user, profile }: { user: any; profile: any }
                   )}
 
                   {project.ar_assessments && project.ar_assessments.status === 'processing' && (
-                    <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 flex items-center gap-3">
+                    <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 flex items-center gap-3">
                       <div className="w-5 h-5 border-2 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
                       <span className="text-amber-700 dark:text-amber-300 text-sm">AI Analysis in progress...</span>
+                    </div>
+                  )}
+
+                  {!project.ar_assessments && (
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/dashboard/project/${project.id}`}
+                        className="px-4 py-2 bg-skin-subtle hover:bg-skin-muted rounded-lg text-sm font-medium text-skin-text transition-colors"
+                      >
+                        View Project
+                      </Link>
                     </div>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-12 rounded-xl bg-skin-subtle border border-skin-border text-center">
+            <div className="p-8 md:p-12 rounded-xl bg-skin-subtle border border-skin-border text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-skin-base flex items-center justify-center">
                 <svg className="w-8 h-8 text-skin-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -202,49 +213,39 @@ async function ContractorDashboard({ user, profile }: { user: any; profile: any 
     .eq('contractor_id', user.id)
     .order('created_at', { ascending: false })
 
+  // Calculate stats
+  const totalMatches = matches?.length || 0
+  const activeLeads = matches?.filter((m: any) => m.status === 'matched' || m.status === 'lead_purchased').length || 0
+  const proposalsSent = matches?.filter((m: any) => m.status === 'proposal_sent').length || 0
+  const jobsWon = matches?.filter((m: any) => m.status === 'proposal_accepted').length || 0
+
   return (
-    <div className="min-h-screen bg-skin-base text-skin-text p-8 transition-colors">
+    <div className="min-h-screen bg-skin-base text-skin-text p-4 md:p-8 transition-colors">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-linear-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold bg-linear-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
               Contractor Dashboard
             </h1>
             <p className="text-skin-muted mt-1">Welcome back, {profile?.full_name || user.email}</p>
           </div>
           <Link
             href="/dashboard/account"
-            className="px-6 py-3 bg-skin-card hover:bg-skin-subtle border border-skin-border rounded-full font-medium transition-all"
+            className="px-6 py-3 bg-skin-card hover:bg-skin-subtle border border-skin-border rounded-full font-medium transition-all text-center"
           >
             Edit Profile
           </Link>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">{matches?.length || 0}</div>
-            <div className="text-sm text-skin-muted">Total Matches</div>
-          </div>
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">
-              {matches?.filter((m: any) => m.status === 'matched' || m.status === 'lead_purchased').length || 0}
-            </div>
-            <div className="text-sm text-skin-muted">Active Leads</div>
-          </div>
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">
-              {matches?.filter((m: any) => m.status === 'proposal_sent').length || 0}
-            </div>
-            <div className="text-sm text-skin-muted">Proposals Sent</div>
-          </div>
-          <div className="p-4 rounded-xl bg-skin-card border border-skin-border">
-            <div className="text-2xl font-bold text-skin-text">
-              {matches?.filter((m: any) => m.status === 'proposal_accepted').length || 0}
-            </div>
-            <div className="text-sm text-skin-muted">Jobs Won</div>
-          </div>
+        {/* Quick Stats - Now with swipeable cards on mobile */}
+        <div className="mb-8">
+          <ContractorStatsWidget
+            totalMatches={totalMatches}
+            activeLeads={activeLeads}
+            proposalsSent={proposalsSent}
+            jobsWon={jobsWon}
+          />
         </div>
 
         {/* Leads List */}
@@ -253,11 +254,11 @@ async function ContractorDashboard({ user, profile }: { user: any; profile: any 
           {matches && matches.length > 0 ? (
             <div className="space-y-4">
               {matches.map((match: any) => (
-                <div key={match.id} className="p-6 rounded-xl bg-skin-card border border-skin-border hover:border-skin-muted transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg text-skin-text">{match.projects?.title}</h3>
-                      <p className="text-skin-muted text-sm mt-1">{match.projects?.description}</p>
+                <div key={match.id} className="p-4 md:p-6 rounded-xl bg-skin-card border border-skin-border hover:border-skin-muted transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg text-skin-text truncate">{match.projects?.title}</h3>
+                      <p className="text-skin-muted text-sm mt-1 line-clamp-2">{match.projects?.description}</p>
                     </div>
                     <StatusBadge status={match.status} />
                   </div>
@@ -279,7 +280,7 @@ async function ContractorDashboard({ user, profile }: { user: any; profile: any 
                     </div>
                   )}
 
-                  <div className="mt-4 flex gap-3">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <Link
                       href={`/dashboard/project/${match.projects?.id}`}
                       className="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 rounded-lg text-sm font-medium text-white transition-colors"
@@ -321,7 +322,7 @@ async function ContractorDashboard({ user, profile }: { user: any; profile: any 
               ))}
             </div>
           ) : (
-            <div className="p-12 rounded-xl bg-skin-subtle border border-skin-border text-center">
+            <div className="p-8 md:p-12 rounded-xl bg-skin-subtle border border-skin-border text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-skin-base flex items-center justify-center">
                 <svg className="w-8 h-8 text-skin-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -358,7 +359,7 @@ function StatusBadge({ status }: { status: string }) {
   const config = statusConfig[status] || { bg: 'bg-gray-100 dark:bg-slate-500/20', text: 'text-gray-700 dark:text-slate-300', label: status }
 
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+    <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text} flex-shrink-0`}>
       {config.label}
     </span>
   )

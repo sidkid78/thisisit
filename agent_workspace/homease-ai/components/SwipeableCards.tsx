@@ -113,22 +113,22 @@ export function SwipeableCards({
     return (
         <div className={`relative ${className}`}>
             {/* Cards Container */}
-            <div 
+            <div
                 ref={containerRef}
                 className="overflow-hidden rounded-2xl"
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
             >
-                <div 
+                <div
                     className="flex transition-transform duration-300 ease-out"
-                    style={{ 
+                    style={{
                         transform: `translateX(calc(-${currentIndex * 100}% + ${isDragging ? dragOffset : 0}px))`,
                         transition: isDragging ? 'none' : 'transform 0.3s ease-out'
                     }}
                 >
                     {cards.map((card, index) => (
-                        <div 
+                        <div
                             key={card.id}
                             className={`w-full flex-shrink-0 ${cardClassName}`}
                         >
@@ -150,8 +150,8 @@ export function SwipeableCards({
                             shadow-lg backdrop-blur-sm
                             flex items-center justify-center
                             transition-all duration-200
-                            ${currentIndex === 0 
-                                ? 'opacity-0 cursor-default' 
+                            ${currentIndex === 0
+                                ? 'opacity-0 cursor-default'
                                 : 'opacity-100 hover:bg-white dark:hover:bg-slate-700 hover:scale-110'
                             }
                             hidden md:flex
@@ -169,8 +169,8 @@ export function SwipeableCards({
                             shadow-lg backdrop-blur-sm
                             flex items-center justify-center
                             transition-all duration-200
-                            ${currentIndex === cards.length - 1 
-                                ? 'opacity-0 cursor-default' 
+                            ${currentIndex === cards.length - 1
+                                ? 'opacity-0 cursor-default'
                                 : 'opacity-100 hover:bg-white dark:hover:bg-slate-700 hover:scale-110'
                             }
                             hidden md:flex
@@ -191,8 +191,8 @@ export function SwipeableCards({
                             onClick={() => goToCard(index)}
                             className={`
                                 transition-all duration-200 rounded-full
-                                ${index === currentIndex 
-                                    ? 'w-6 h-2 bg-blue-500' 
+                                ${index === currentIndex
+                                    ? 'w-6 h-2 bg-blue-500'
                                     : 'w-2 h-2 bg-gray-300 dark:bg-slate-600 hover:bg-gray-400 dark:hover:bg-slate-500'
                                 }
                             `}
@@ -227,16 +227,16 @@ interface WidgetCardProps {
     gradient?: string
 }
 
-export function WidgetCard({ 
-    title, 
-    subtitle, 
-    icon, 
-    children, 
+export function WidgetCard({
+    title,
+    subtitle,
+    icon,
+    children,
     action,
     gradient = 'from-blue-500 to-cyan-500'
 }: WidgetCardProps) {
     return (
-        <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div className="bg-skin-card dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
             {/* Header */}
             <div className={`p-4 bg-gradient-to-r ${gradient}`}>
                 <div className="flex items-center gap-3">
@@ -297,20 +297,20 @@ export function StatCard({ label, value, change, icon, color = 'blue' }: StatCar
     }
 
     return (
-        <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
+        <div className="bg-skin-card dark:bg-slate-800/50 rounded-2xl border border-gray-200 dark:border-slate-700 p-4">
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">{label}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-slate-400">{label}</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
                     {change && (
-                        <p className={`text-sm mt-1 ${change.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                        <p className={`text-sm mt-1 ${change.isPositive ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
                             {change.isPositive ? '↑' : '↓'} {Math.abs(change.value)}%
                         </p>
                     )}
                 </div>
                 {icon && (
                     <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color]} 
-                        flex items-center justify-center text-white`}>
+                        flex items-center justify-center text-white shadow-lg shadow-${color}-500/20`}>
                         {icon}
                     </div>
                 )}
