@@ -97,8 +97,8 @@ function ImageComparison({
                     <button
                         onClick={() => setShowAfter(false)}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${!showAfter
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
                             }`}
                     >
                         Before
@@ -106,8 +106,8 @@ function ImageComparison({
                     <button
                         onClick={() => setShowAfter(true)}
                         className={`px-4 py-2 rounded-lg font-medium transition-all ${showAfter
-                                ? 'bg-green-500 text-white'
-                                : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400'
                             }`}
                     >
                         After (AI Preview)
@@ -155,8 +155,8 @@ function ImageComparison({
 
                     {/* Image label */}
                     <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium ${showAfter
-                            ? 'bg-green-500/90 text-white'
-                            : 'bg-gray-900/80 text-white'
+                        ? 'bg-green-500/90 text-white'
+                        : 'bg-gray-900/80 text-white'
                         }`}>
                         {showAfter ? 'AFTER (AI Preview)' : 'BEFORE'}
                     </div>
@@ -295,12 +295,14 @@ function PrivacyConsentModal({
     isOpen,
     onClose,
     onConfirm,
-    isLoading
+    isLoading,
+    error
 }: {
     isOpen: boolean
     onClose: () => void
     onConfirm: () => void
     isLoading?: boolean
+    error?: string
 }) {
     if (!isOpen) return null
 
@@ -338,6 +340,13 @@ function PrivacyConsentModal({
                         Contact info shared only after contractor purchase
                     </li>
                 </ul>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 rounded-lg text-sm">
+                        {error}
+                    </div>
+                )}
+
                 <div className="flex gap-3">
                     <button
                         onClick={onClose}
@@ -680,6 +689,7 @@ export default function AssessmentPage() {
         if (!assessmentResult || !projectId) return
 
         setIsPublishing(true)
+        setErrorMessage('') // Clear previous errors
 
         try {
             const { data: { user } } = await supabase.auth.getUser()
@@ -700,7 +710,7 @@ export default function AssessmentPage() {
                 estimated_value: assessmentResult.cost_estimate_max || assessmentResult.cost_estimate_min || 5000,
                 price: Math.round((assessmentResult.cost_estimate_min || 100) * 0.05), // 5% of min estimate as lead price
                 status: 'available',
-                preview_image_url: images[0]?.publicUrl || images[0]?.preview,
+                preview_image: images[0]?.publicUrl || images[0]?.preview,
                 accessibility_score: assessmentResult.accessibility_score,
             }
 
@@ -980,7 +990,7 @@ export default function AssessmentPage() {
                                         <div key={index} className="p-4 rounded-xl bg-white dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700">
                                             <div className="flex items-start gap-3">
                                                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${hazard.severity === 'High' ? 'bg-red-500' :
-                                                        hazard.severity === 'Medium' ? 'bg-amber-500' : 'bg-blue-500'
+                                                    hazard.severity === 'Medium' ? 'bg-amber-500' : 'bg-blue-500'
                                                     }`}>
                                                     {index + 1}
                                                 </span>
@@ -1104,6 +1114,7 @@ export default function AssessmentPage() {
                     onClose={() => setShowPrivacyModal(false)}
                     onConfirm={handlePublishLead}
                     isLoading={isPublishing}
+                    error={errorMessage}
                 />
 
                 {/* Feedback Modal */}
