@@ -427,14 +427,14 @@ export default function AssessmentPage() {
     const router = useRouter()
     const supabase = createClient()
 
-    // Show feedback modal when assessment completes
+    // Show feedback modal after user has engaged with results (published or starting new)
     useEffect(() => {
-        if (assessmentStatus === 'complete' && assessmentResult) {
-            // Delay to let results render first
-            const timer = setTimeout(() => setShowFeedbackModal(true), 2000)
+        if (publishSuccess) {
+            // Show feedback after successfully publishing to marketplace
+            const timer = setTimeout(() => setShowFeedbackModal(true), 1500)
             return () => clearTimeout(timer)
         }
-    }, [assessmentStatus, assessmentResult])
+    }, [publishSuccess])
 
     // Simulate progress during processing
     useEffect(() => {

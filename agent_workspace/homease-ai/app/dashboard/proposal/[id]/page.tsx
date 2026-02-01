@@ -53,7 +53,9 @@ export default function ProposalPage() {
             setAssessment(matchData.projects?.ar_assessments)
 
             // Convert recommendations to line items
-            const recommendations = matchData.projects?.ar_assessments?.recommendations || []
+            const obs_assessments = matchData.projects?.ar_assessments
+            const assessmentsArr = Array.isArray(obs_assessments) ? obs_assessments : (obs_assessments ? [obs_assessments] : [])
+            const recommendations = assessmentsArr.flatMap((a: any) => a.recommendations || [])
             const initialItems: LineItem[] = recommendations.map((rec: any, index: number) => ({
                 id: `rec-${index}`,
                 description: rec.recommendation || rec.details || `Recommendation ${index + 1}`,

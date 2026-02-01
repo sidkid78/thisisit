@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import ChatComponent from '@/components/ChatComponent'
+import { AddressInput, isValidAddress, type AddressData } from '@/components/AddressInput'
 
 export default function ProjectDetailPage() {
     const [project, setProject] = useState<any>(null)
@@ -14,6 +15,8 @@ export default function ProjectDetailPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [urgency, setUrgency] = useState('medium')
     const [budgetRange, setBudgetRange] = useState('$5k-$10k')
+    const [address, setAddress] = useState<AddressData>({ street: '', city: '', state: '', zip: '' })
+    const [matchMessage, setMatchMessage] = useState('')
     const [userId, setUserId] = useState<string>('')
     const [otherPartyName, setOtherPartyName] = useState<string>('User')
     const router = useRouter()
@@ -73,38 +76,40 @@ export default function ProjectDetailPage() {
     }
 
     const handleSubmitLead = async () => {
+        if (!isValidAddress(address, false)) {
+            setMatchMessage('Please enter your city, state, and ZIP code to find contractors in your area.')
+            return
+        }
+
         setIsSubmitting(true)
+        setMatchMessage('')
 
         try {
-            // Update project with lead details
-            const { error: updateError } = await supabase
-                .from('projects')
-                .update({
+            // Call the matching API with geocoding
+            const response = await fetch('/api/match', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectId: project.id,
+                    address,
                     urgency,
-                    budget_range: budgetRange,
-                    status: 'open_for_bids'
+                    budgetRange
                 })
-                .eq('id', project.id)
-
-            if (updateError) throw updateError
-
-            // Trigger contractor matching
-            const { error: fnError } = await supabase.functions.invoke('match-contractors', {
-                body: {
-                    id: project.id,
-                    location: project.location
-                }
             })
 
-            if (fnError) {
-                console.warn('Matching function error:', fnError)
-                // Continue anyway - matching might happen via database trigger
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to submit lead')
             }
 
-            // Reload project
+            setMatchMessage(result.message || 'Lead submitted successfully!')
+
+            // Reload project to show matches
             await loadProject()
         } catch (error: any) {
             console.error('Failed to submit lead:', error)
+            setMatchMessage(error.message || 'Failed to find contractors. Please try again.')
         } finally {
             setIsSubmitting(false)
         }
@@ -294,6 +299,31 @@ export default function ProjectDetailPage() {
                                 </select>
                             </div>
                         </div>
+
+                        {/* Project Location for Contractor Matching */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">
+                                📍 Project Location
+                            </label>
+                            <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">
+                                Enter your address to find contractors who service your area
+                            </p>
+                            <AddressInput
+                                value={address}
+                                onChange={setAddress}
+                            />
+                        </div>
+
+                        {/* Match Results Message */}
+                        {matchMessage && (
+                            <div className={`mb-6 p-4 rounded-lg ${
+                                matchMessage.includes('Found') || matchMessage.includes('success')
+                                    ? 'bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-300'
+                                    : 'bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300'
+                            }`}>
+                                {matchMessage}
+                            </div>
+                        )}
 
                         <button
                             onClick={handleSubmitLead}
