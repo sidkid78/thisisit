@@ -42,147 +42,116 @@ DECLARE
     contractor3_id UUID := '33333333-3333-3333-3333-333333333333';
     contractor4_id UUID := '44444444-4444-4444-4444-444444444444';
     contractor5_id UUID := '55555555-5555-5555-5555-555555555555';
+    
+    current_skill_id INTEGER;
+    skill_names TEXT[];
+    s_name TEXT;
 BEGIN
+    -- 1. Ensure users exist in auth.users
+    INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, aud, role)
+    VALUES 
+        (contractor1_id, 'austin.pros@demo.homease.ai', '$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash', now(), 'authenticated', 'authenticated'),
+        (contractor2_id, 'gulfcoast@demo.homease.ai', '$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash', now(), 'authenticated', 'authenticated'),
+        (contractor3_id, 'bayarea@demo.homease.ai', '$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash', now(), 'authenticated', 'authenticated'),
+        (contractor4_id, 'milehigh@demo.homease.ai', '$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash', now(), 'authenticated', 'authenticated'),
+        (contractor5_id, 'southfl@demo.homease.ai', '$2a$10$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash', now(), 'authenticated', 'authenticated')
+    ON CONFLICT (id) DO NOTHING;
+
+    -- 2. Insert Profiles
+    INSERT INTO profiles (id, full_name, role)
+    VALUES 
+        (contractor1_id, 'Austin Accessibility Pros', 'contractor'),
+        (contractor2_id, 'Gulf Coast Home Mods', 'contractor'),
+        (contractor3_id, 'Bay Area Senior Solutions', 'contractor'),
+        (contractor4_id, 'Mile High Accessibility', 'contractor'),
+        (contractor5_id, 'South Florida Safe Homes', 'contractor')
+    ON CONFLICT (id) DO UPDATE SET role = 'contractor';
+
+    -- 3. Insert Contractor Details
+    
     -- Austin Accessibility Pros (Austin, TX - 30mi radius)
-    INSERT INTO profiles (id, email, full_name, user_type, is_caps_certified, years_experience, 
-                         license_number, verification_status, service_area_radius, service_area)
-    VALUES (
-        contractor1_id,
-        'austin.pros@demo.homease.ai',
-        'Austin Accessibility Pros',
-        'contractor',
-        true,
-        12,
-        'TX-AAP-2024-001',
-        'approved',
-        30,
-        create_circle_polygon(30.2672, -97.7431, 30)
-    ) ON CONFLICT (id) DO UPDATE SET
-        service_area = create_circle_polygon(30.2672, -97.7431, 30),
+    INSERT INTO contractor_details (profile_id, company_name, is_caps_certified, license_number, verification_status, service_radius_miles, service_area)
+    VALUES (contractor1_id, 'Austin Accessibility Pros', true, 'TX-AAP-2024-001', 'approved', 30, create_circle_polygon(30.2672, -97.7431, 30))
+    ON CONFLICT (profile_id) DO UPDATE SET
+        service_area = EXCLUDED.service_area,
         verification_status = 'approved';
 
     -- Gulf Coast Home Mods (Houston, TX - 40mi radius)
-    INSERT INTO profiles (id, email, full_name, user_type, is_caps_certified, years_experience,
-                         license_number, verification_status, service_area_radius, service_area)
-    VALUES (
-        contractor2_id,
-        'gulfcoast@demo.homease.ai',
-        'Gulf Coast Home Mods',
-        'contractor',
-        true,
-        15,
-        'TX-GCHM-2023-042',
-        'approved',
-        40,
-        create_circle_polygon(29.7604, -95.3698, 40)
-    ) ON CONFLICT (id) DO UPDATE SET
-        service_area = create_circle_polygon(29.7604, -95.3698, 40),
+    INSERT INTO contractor_details (profile_id, company_name, is_caps_certified, license_number, verification_status, service_radius_miles, service_area)
+    VALUES (contractor2_id, 'Gulf Coast Home Mods', true, 'TX-GCHM-2023-042', 'approved', 40, create_circle_polygon(29.7604, -95.3698, 40))
+    ON CONFLICT (profile_id) DO UPDATE SET
+        service_area = EXCLUDED.service_area,
         verification_status = 'approved';
 
     -- Bay Area Senior Solutions (San Francisco, CA - 25mi radius)
-    INSERT INTO profiles (id, email, full_name, user_type, is_caps_certified, years_experience,
-                         license_number, verification_status, service_area_radius, service_area)
-    VALUES (
-        contractor3_id,
-        'bayarea@demo.homease.ai',
-        'Bay Area Senior Solutions',
-        'contractor',
-        true,
-        8,
-        'CA-BASS-2024-108',
-        'approved',
-        25,
-        create_circle_polygon(37.7749, -122.4194, 25)
-    ) ON CONFLICT (id) DO UPDATE SET
-        service_area = create_circle_polygon(37.7749, -122.4194, 25),
+    INSERT INTO contractor_details (profile_id, company_name, is_caps_certified, license_number, verification_status, service_radius_miles, service_area)
+    VALUES (contractor3_id, 'Bay Area Senior Solutions', true, 'CA-BASS-2024-108', 'approved', 25, create_circle_polygon(37.7749, -122.4194, 25))
+    ON CONFLICT (profile_id) DO UPDATE SET
+        service_area = EXCLUDED.service_area,
         verification_status = 'approved';
 
     -- Mile High Accessibility (Denver, CO - 35mi radius)
-    INSERT INTO profiles (id, email, full_name, user_type, is_caps_certified, years_experience,
-                         license_number, verification_status, service_area_radius, service_area)
-    VALUES (
-        contractor4_id,
-        'milehigh@demo.homease.ai',
-        'Mile High Accessibility',
-        'contractor',
-        false,
-        6,
-        'CO-MHA-2024-055',
-        'approved',
-        35,
-        create_circle_polygon(39.7392, -104.9903, 35)
-    ) ON CONFLICT (id) DO UPDATE SET
-        service_area = create_circle_polygon(39.7392, -104.9903, 35),
+    INSERT INTO contractor_details (profile_id, company_name, is_caps_certified, license_number, verification_status, service_radius_miles, service_area)
+    VALUES (contractor4_id, 'Mile High Accessibility', false, 'CO-MHA-2024-055', 'approved', 35, create_circle_polygon(39.7392, -104.9903, 35))
+    ON CONFLICT (profile_id) DO UPDATE SET
+        service_area = EXCLUDED.service_area,
         verification_status = 'approved';
 
     -- South Florida Safe Homes (Miami, FL - 30mi radius)
-    INSERT INTO profiles (id, email, full_name, user_type, is_caps_certified, years_experience,
-                         license_number, verification_status, service_area_radius, service_area)
-    VALUES (
-        contractor5_id,
-        'southfl@demo.homease.ai',
-        'South Florida Safe Homes',
-        'contractor',
-        true,
-        10,
-        'FL-SFSH-2023-201',
-        'approved',
-        30,
-        create_circle_polygon(25.7617, -80.1918, 30)
-    ) ON CONFLICT (id) DO UPDATE SET
-        service_area = create_circle_polygon(25.7617, -80.1918, 30),
+    INSERT INTO contractor_details (profile_id, company_name, is_caps_certified, license_number, verification_status, service_radius_miles, service_area)
+    VALUES (contractor5_id, 'South Florida Safe Homes', true, 'FL-SFSH-2023-201', 'approved', 30, create_circle_polygon(25.7617, -80.1918, 30))
+    ON CONFLICT (profile_id) DO UPDATE SET
+        service_area = EXCLUDED.service_area,
         verification_status = 'approved';
 
-    -- Add skills for each contractor
-    -- Austin Accessibility Pros
-    INSERT INTO contractor_skills (contractor_id, skill_name) VALUES
-        (contractor1_id, 'Walk-in Shower'),
-        (contractor1_id, 'Grab Bars'),
-        (contractor1_id, 'Wheelchair Ramps'),
-        (contractor1_id, 'Bathroom Modifications'),
-        (contractor1_id, 'Stair Lifts')
-    ON CONFLICT DO NOTHING;
+    -- 4. Skills
+    
+    -- Austin Skills
+    skill_names := ARRAY['Walk-in Shower', 'Grab Bars', 'Wheelchair Ramps', 'Bathroom Modifications', 'Stair Lifts'];
+    FOREACH s_name IN ARRAY skill_names LOOP
+        INSERT INTO skills (name) VALUES (s_name) ON CONFLICT (name) DO NOTHING;
+        SELECT id INTO current_skill_id FROM skills WHERE name = s_name;
+        INSERT INTO contractor_skills (contractor_id, skill_id) VALUES (contractor1_id, current_skill_id) ON CONFLICT DO NOTHING;
+    END LOOP;
 
-    -- Gulf Coast Home Mods
-    INSERT INTO contractor_skills (contractor_id, skill_name) VALUES
-        (contractor2_id, 'Walk-in Shower'),
-        (contractor2_id, 'Grab Bars'),
-        (contractor2_id, 'Door Widening'),
-        (contractor2_id, 'Kitchen Modifications'),
-        (contractor2_id, 'Non-slip Flooring')
-    ON CONFLICT DO NOTHING;
+    -- Gulf Coast Skills
+    skill_names := ARRAY['Walk-in Shower', 'Grab Bars', 'Door Widening', 'Kitchen Modifications', 'Non-slip Flooring'];
+    FOREACH s_name IN ARRAY skill_names LOOP
+        INSERT INTO skills (name) VALUES (s_name) ON CONFLICT (name) DO NOTHING;
+        SELECT id INTO current_skill_id FROM skills WHERE name = s_name;
+        INSERT INTO contractor_skills (contractor_id, skill_id) VALUES (contractor2_id, current_skill_id) ON CONFLICT DO NOTHING;
+    END LOOP;
 
-    -- Bay Area Senior Solutions
-    INSERT INTO contractor_skills (contractor_id, skill_name) VALUES
-        (contractor3_id, 'Walk-in Shower'),
-        (contractor3_id, 'Grab Bars'),
-        (contractor3_id, 'Wheelchair Ramps'),
-        (contractor3_id, 'Smart Home Integration'),
-        (contractor3_id, 'Lighting Improvements')
-    ON CONFLICT DO NOTHING;
+    -- Bay Area Skills
+    skill_names := ARRAY['Walk-in Shower', 'Grab Bars', 'Wheelchair Ramps', 'Smart Home Integration', 'Lighting Improvements'];
+    FOREACH s_name IN ARRAY skill_names LOOP
+        INSERT INTO skills (name) VALUES (s_name) ON CONFLICT (name) DO NOTHING;
+        SELECT id INTO current_skill_id FROM skills WHERE name = s_name;
+        INSERT INTO contractor_skills (contractor_id, skill_id) VALUES (contractor3_id, current_skill_id) ON CONFLICT DO NOTHING;
+    END LOOP;
 
-    -- Mile High Accessibility
-    INSERT INTO contractor_skills (contractor_id, skill_name) VALUES
-        (contractor4_id, 'Grab Bars'),
-        (contractor4_id, 'Handrails'),
-        (contractor4_id, 'Non-slip Flooring'),
-        (contractor4_id, 'Bathroom Modifications')
-    ON CONFLICT DO NOTHING;
+    -- Mile High Skills
+    skill_names := ARRAY['Grab Bars', 'Handrails', 'Non-slip Flooring', 'Bathroom Modifications'];
+    FOREACH s_name IN ARRAY skill_names LOOP
+        INSERT INTO skills (name) VALUES (s_name) ON CONFLICT (name) DO NOTHING;
+        SELECT id INTO current_skill_id FROM skills WHERE name = s_name;
+        INSERT INTO contractor_skills (contractor_id, skill_id) VALUES (contractor4_id, current_skill_id) ON CONFLICT DO NOTHING;
+    END LOOP;
 
-    -- South Florida Safe Homes
-    INSERT INTO contractor_skills (contractor_id, skill_name) VALUES
-        (contractor5_id, 'Walk-in Shower'),
-        (contractor5_id, 'Grab Bars'),
-        (contractor5_id, 'Wheelchair Ramps'),
-        (contractor5_id, 'Pool Safety'),
-        (contractor5_id, 'Hurricane-Resistant Modifications')
-    ON CONFLICT DO NOTHING;
+    -- South Florida Skills
+    skill_names := ARRAY['Walk-in Shower', 'Grab Bars', 'Wheelchair Ramps', 'Pool Safety', 'Hurricane-Resistant Modifications'];
+    FOREACH s_name IN ARRAY skill_names LOOP
+        INSERT INTO skills (name) VALUES (s_name) ON CONFLICT (name) DO NOTHING;
+        SELECT id INTO current_skill_id FROM skills WHERE name = s_name;
+        INSERT INTO contractor_skills (contractor_id, skill_id) VALUES (contractor5_id, current_skill_id) ON CONFLICT DO NOTHING;
+    END LOOP;
 
 END $$;
 
 -- Create spatial index on service_area for faster matching queries
-CREATE INDEX IF NOT EXISTS idx_profiles_service_area_gist 
-ON profiles USING GIST (service_area);
+-- Note: Index should be on contractor_details now, not profiles
+CREATE INDEX IF NOT EXISTS idx_contractor_details_service_area_gist 
+ON contractor_details USING GIST (service_area);
 
--- Add comment documenting the demo data
+-- Add comment
 COMMENT ON FUNCTION create_circle_polygon IS 'Creates a circular polygon for contractor service areas. Used for geospatial matching.';
